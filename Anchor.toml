@@ -7,13 +7,14 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-easy_amm = "EuPnp5xmATyeaX6hNNESRnsStztj4FkfEMKVqUs5XetR"
+easy_amm = "Ds2VNJ6Ay2JVfGhLedAHAiyUyDTMGW8A8dBXneLdDhBe"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
 cluster = "localnet"
+# cluster = "http://127.0.0.1:8899"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
