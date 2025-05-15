@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 pub mod state;
 pub mod instructions;
 pub mod error;
+pub mod events;
 
 pub use instructions::*;
 
@@ -22,5 +23,31 @@ pub mod easy_amm {
         amount_b: u64,
     ) -> Result<()> {
         ctx.accounts.process(trade_fees, withdraw_fees, amount_a, amount_b, ctx.bumps)
+    }
+
+    pub fn withdraw_all(
+        ctx: Context<WithdrawAll>,
+        token_amount: u64,
+        minimum_token_a_amount: u64,
+        minimum_token_b_amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.process(
+            token_amount, 
+            minimum_token_a_amount, 
+            minimum_token_b_amount, 
+            ctx.bumps.swap
+        )
+    }
+
+    pub fn withdraw_single(
+        ctx: Context<WithdrawSingle>,
+        destination_token_amount: u64,
+        maximum_pool_token_amount: u64,
+    ) -> Result<()> {
+        ctx.accounts.process(
+            ctx.bumps.swap, 
+            destination_token_amount, 
+            maximum_pool_token_amount
+        )
     }
 }

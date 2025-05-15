@@ -1,3 +1,6 @@
+//! 公用函数
+//! 转账、铸币、计算手续费、池币兑换
+
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{
     Mint, 
@@ -6,8 +9,13 @@ use anchor_spl::token_interface::{
     transfer_checked,
     TransferChecked,
     mint_to_checked,
-    MintToChecked
+    MintToChecked,
+    BurnChecked,
+    burn_checked
 };
+use spl_math::precise_number::PreciseNumber;
+
+use crate::{error::SwapError, state::Swap};
 
 
 pub fn transfer_tokens<'info>(
@@ -16,24 +24,37 @@ pub fn transfer_tokens<'info>(
     amount: u64,
     mint: &InterfaceAccount<'info, Mint>,
     authority: AccountInfo<'info>,
-    token_program: &Interface<'info, TokenInterface>
+    token_program: &Interface<'info, TokenInterface>,
+    signer_seeds: Option<&[&[&[u8]]]>
 ) -> Result<()> {
-    transfer_checked(
-        CpiContext::new(
+    let cpi = match signer_seeds {
+        Some(seeds) => CpiContext::new_with_signer(
             token_program.to_account_info(), 
-            TransferChecked { 
+            TransferChecked {
+                from: from.to_account_info(), 
+                mint: mint.to_account_info(), 
+                to: to.to_account_info(), 
+                authority: authority,
+            }, 
+            seeds
+        ),
+        None => CpiContext::new(
+            token_program.to_account_info(),
+            TransferChecked {
                 from: from.to_account_info(), 
                 mint: mint.to_account_info(), 
                 to: to.to_account_info(), 
                 authority: authority
-            }
-        ), 
-        amount, 
-        mint.decimals
-    )
+            } 
+        )
+
+    };
+
+    transfer_checked(cpi, amount, mint.decimals)
 }
 
 
+/// 铸造代币
 pub fn mint_tokens<'info>(
     mint: &InterfaceAccount<'info, Mint>,
     destination: &InterfaceAccount<'info, TokenAccount>,
@@ -56,3 +77,99 @@ pub fn mint_tokens<'info>(
         mint.decimals
     )
 }
+
+/// 销毁代币
+pub fn burn_tokens<'info>(
+    from: &InterfaceAccount<'info, TokenAccount>, // 要销毁token的账户
+    mint: &InterfaceAccount<'info, Mint>,
+    authority: AccountInfo<'info>,               // owner or PDA
+    token_program: &Interface<'info, TokenInterface>,
+    amount: u64
+) -> Result<()> {
+    burn_checked(
+        CpiContext::new(
+            token_program.to_account_info(), 
+            BurnChecked { 
+                mint: mint.to_account_info(), 
+                from: from.to_account_info(), 
+                authority: authority 
+            }
+        ), 
+        amount, 
+        mint.decimals
+    )
+}
+
+/// 手续费计算逻辑，向下取整
+pub fn calculation_fee(amounts: u128, fee_amount: u128) -> Option<u128> {
+    if fee_amount == 0 {
+        Some(0)
+    } else {
+        let fee = amounts
+            .checked_mul(fee_amount)?
+            .checked_div(u128::from(Swap::FEES_BASIS_POINTS))?;
+        if fee == 0 {
+            Some(0)
+        } else {
+            Some(fee)
+        }
+    }
+}
+
+pub fn to_u64(val: u128) -> Result<u64> {
+    val.try_into().map_err(|_| error!(SwapError::ConversionFailure))
+}
+
+/// 根据提供的池子代币数量、总交易代币数量和池子代币总供应量，计算可兑换的交易代币数量。
+/// 计算可兑换的交易代币数量。
+/// 向下取整
+pub fn pool_tokens_to_trading_toknes(
+    pool_tokens: u128,
+    pool_token_supply: u128,
+    swap_token_a_amount: u128,
+    swap_token_b_amount: u128, 
+) -> Option<(u128, u128)> {
+    let token_a_amount = pool_tokens
+        .checked_mul(swap_token_a_amount)?
+        .checked_div(pool_token_supply)?;
+
+    let token_b_amount = pool_tokens
+        .checked_mul(swap_token_b_amount)?
+        .checked_div(pool_token_supply)?;
+    
+    Some((token_a_amount, token_b_amount))
+}
+
+
+/// 根据指定的 token A 或 B 提取数量，计算需要销毁的池子代币数量
+pub fn withdraw_single_token_type_exact_out(
+    trade_fee_amount: u128,
+    source_amount: u128,
+    swap_token_amount: u128,
+    pool_supply: u128,
+) -> Option<u128> {
+    // 由于我们希望计算出为了获得精确的输出，需要多少池子代币，
+    // 因此我们需要获取“源代币数量的一半”兑换为另一种代币时所产生的反向交易手续费
+    let half_source_amount = source_amount.checked_add(1)?.checked_div(2)?;
+    let trade_fee_source_amount = calculation_fee(
+        half_source_amount, 
+        trade_fee_amount
+    )?;
+
+    let source_amount = source_amount.checked_add(trade_fee_source_amount)?;
+
+    let swap_source_amount = PreciseNumber::new(swap_token_amount)?;
+    let source_amount = PreciseNumber::new(source_amount)?;
+    let ratio = source_amount.checked_div(&swap_source_amount)?;
+    let one = PreciseNumber::new(1)?;
+    let base = one.checked_sub(&ratio)
+        .unwrap_or_else(|| PreciseNumber::new(0).unwrap());
+
+    let root = one.checked_sub(&base.sqrt()?)?;
+
+    let pool_tokens = PreciseNumber::new(pool_supply)?
+        .checked_mul(&root)?;
+
+    pool_tokens.ceiling()?.to_imprecise()
+}
+

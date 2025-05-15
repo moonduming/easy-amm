@@ -1,22 +1,12 @@
+//! 池子初始化
+
 use anchor_lang::prelude::*;
-/// Emitted once a pool is successfully initialized.
-#[event]
-pub struct InitializeSwapEvent {
-    pub swap: Pubkey,
-    pub user: Pubkey,
-    pub token_a: Pubkey,
-    pub token_b: Pubkey,
-    pub pool_mint: Pubkey,
-    pub initial_a: u64,
-    pub initial_b: u64,
-    pub lp_issued: u64,
-}
 use anchor_spl::{
     associated_token::AssociatedToken, 
     token_interface::{Mint, TokenAccount, TokenInterface}
 };
 
-use crate::{error::SwapError, shared::{mint_tokens, transfer_tokens}, state::Swap};
+use crate::{error::SwapError, events::InitializeSwapEvent, shared::{mint_tokens, transfer_tokens}, state::Swap};
 
 
 
@@ -148,7 +138,8 @@ impl<'info> InitializeSwap<'info> {
             amount_a, 
             &self.token_a_mint, 
             self.user.to_account_info(), 
-            &self.token_program
+            &self.token_program,
+            None
         )?;
 
         msg!("token_b 首充 {}", amount_b);
@@ -158,7 +149,8 @@ impl<'info> InitializeSwap<'info> {
             amount_b, 
             &self.token_b_mint, 
             self.user.to_account_info(), 
-            &self.token_program
+            &self.token_program,
+            None
         )?;
 
         // 铸造代币

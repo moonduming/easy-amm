@@ -26,8 +26,10 @@ impl Swap {
     pub const TOKEN_B_SEEDS: &'static [u8] = b"token_b";
     pub const POOL_MINT_SEEDS: &'static [u8] = b"lp_mint";
 
-    pub const FEES_BASIS_POINTS: u16 = 10_000;
+    pub const FEES_BASIS_POINTS: u64 = 10_000;
     pub const INITIAL_SWAP_POOL_AMOUNT: u64 = 1_000_000_000;
     pub const MAX_TRADE_FEES: u16 = 5_000;
     pub const MAX_WITHDRAW_FEES: u16 = 5_000;
+
+    pub const MIN_TOKEN_AMOUNT: u64 = 1_000;
 }
