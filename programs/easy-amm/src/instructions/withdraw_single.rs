@@ -74,7 +74,7 @@ impl<'info> WithdrawSingle<'info> {
         if self.mint.key() != self.swap.token_a_mint 
             && self.mint.key() != self.swap.token_b_mint 
         {
-            return err!(SwapError::InvalidWithdrawMint);
+            return err!(SwapError::InvalidMint);
         }
 
         let swap_token_amount = self.pool_token.amount;
@@ -107,7 +107,7 @@ impl<'info> WithdrawSingle<'info> {
         }
 
         if pool_token_amount > self.user_mint_account.amount {
-            return err!(SwapError::ExceededSlippage);
+            return err!(SwapError::InsufficientPoolTokenBalance);
         }
 
         let withdraw_fee = to_u64(withdraw_fee)?;

@@ -37,3 +37,24 @@ pub struct WithdrawSingleEvent {
     pub destination_token_amount: u64,
     pub withdraw_fee: u64,
 }
+
+
+/// 存入流动性(双币)
+#[event]
+pub struct DepositEvent {
+    pub user: Pubkey,
+    pub pool_mint: Pubkey,
+    pub pool_token_amount: u64,
+    pub token_a_amount: u64,
+    pub token_b_amount: u64,
+}
+
+
+/// 存入流动性(单币)
+#[event]
+pub struct DepositSingleEvent {
+    pub user: Pubkey,
+    pub mint: Pubkey,
+    pub source_token_amount: u64,
+    pub pool_token_amount: u64,
+}

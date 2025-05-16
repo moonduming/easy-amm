@@ -78,6 +78,7 @@ pub fn mint_tokens<'info>(
     )
 }
 
+
 /// 销毁代币
 pub fn burn_tokens<'info>(
     from: &InterfaceAccount<'info, TokenAccount>, // 要销毁token的账户
@@ -100,6 +101,23 @@ pub fn burn_tokens<'info>(
     )
 }
 
+
+/// 计算反向交易所需的输入数量，即为了获得指定的输出，需要多少输入
+pub fn pre_trading_fee_amoun(amounts: u128, fee_amount: u128) -> Option<u128> {
+    if fee_amount == 0 {
+        Some(amounts)
+    } else {
+        let fee_denominator = u128::from(Swap::FEES_BASIS_POINTS);
+        let numerator = amounts.checked_mul(fee_denominator)?;
+        let denominator = fee_denominator.checked_sub(fee_amount)?;
+
+        numerator.checked_add(denominator)?
+            .checked_sub(1)?
+            .checked_div(denominator)
+    }
+}
+
+
 /// 手续费计算逻辑，向下取整
 pub fn calculation_fee(amounts: u128, fee_amount: u128) -> Option<u128> {
     if fee_amount == 0 {
@@ -116,9 +134,12 @@ pub fn calculation_fee(amounts: u128, fee_amount: u128) -> Option<u128> {
     }
 }
 
+
+
 pub fn to_u64(val: u128) -> Result<u64> {
     val.try_into().map_err(|_| error!(SwapError::ConversionFailure))
 }
+
 
 /// 根据提供的池子代币数量、总交易代币数量和池子代币总供应量，计算可兑换的交易代币数量。
 /// 计算可兑换的交易代币数量。
@@ -151,12 +172,15 @@ pub fn withdraw_single_token_type_exact_out(
     // 由于我们希望计算出为了获得精确的输出，需要多少池子代币，
     // 因此我们需要获取“源代币数量的一半”兑换为另一种代币时所产生的反向交易手续费
     let half_source_amount = source_amount.checked_add(1)?.checked_div(2)?;
-    let trade_fee_source_amount = calculation_fee(
+
+    let trade_fee_source_amount = pre_trading_fee_amoun(
         half_source_amount, 
         trade_fee_amount
     )?;
 
-    let source_amount = source_amount.checked_add(trade_fee_source_amount)?;
+    let source_amount = source_amount
+        .checked_sub(half_source_amount)?
+        .checked_add(trade_fee_source_amount)?;
 
     let swap_source_amount = PreciseNumber::new(swap_token_amount)?;
     let source_amount = PreciseNumber::new(source_amount)?;
@@ -173,3 +197,27 @@ pub fn withdraw_single_token_type_exact_out(
     pool_tokens.ceiling()?.to_imprecise()
 }
 
+
+/// 根据存入的 token A 或 B 数量，计算可以获得的池子代币数量
+pub fn deposit_single_token_type(
+    trade_fee_amount: u128,
+    source_amount: u128,
+    swap_token_amount: u128,
+    pool_supply: u128
+) -> Option<u128> {
+    // 获取在将“源代币数量的一半”兑换为另一种代币时产生的交易手续费
+    let half_source_amount = std::cmp::max(1, source_amount.checked_div(2)?);
+    let tred_fee = calculation_fee(half_source_amount, trade_fee_amount)?;
+    let source_amount = source_amount.checked_sub(tred_fee)?;
+
+    let swap_source_amount = PreciseNumber::new(swap_token_amount)?;
+    let source_amount = PreciseNumber::new(source_amount)?;
+    let ratio = source_amount.checked_div(&swap_source_amount)?;
+    let one = PreciseNumber::new(1)?;
+    let base = one.checked_add(&ratio)?;
+    let root = base.sqrt()?.checked_sub(&one)?;
+    let pool_tokens = PreciseNumber::new(pool_supply)?
+        .checked_mul(&root)?;
+
+    pool_tokens.floor()?.to_imprecise()
+}

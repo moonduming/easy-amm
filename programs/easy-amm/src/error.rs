@@ -36,6 +36,18 @@ pub enum SwapError {
     #[msg("Swap instruction exceeds desired slippage limit")]
     ExceededSlippage,
 
-    #[msg("Withdraw mint must be one of the swap's token_a_mint or token_b_mint")]
-    InvalidWithdrawMint,
+    #[msg("The mint must be one of the swap's supported tokens")]
+    InvalidMint,
+
+    #[msg("Insufficient pool token balance")]
+    InsufficientPoolTokenBalance,
+
+    #[msg("User token balance is insufficient")]
+    InsufficientTokenBalance,
+
+    #[msg("The deposit pool token amount is too small")]
+    DepositPoolTokenAmountTooSmall,
+
+    #[msg("The deposit single token amount is too small")]
+    DepositSingleAmountTooSmall,
 }

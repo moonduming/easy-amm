@@ -114,6 +114,10 @@ impl<'info> WithdrawAll<'info> {
         bump_swap: u8
     ) -> Result<()> {
         require_gt!(token_amount, Swap::MIN_TOKEN_AMOUNT, SwapError::WithdrawTooSmall);
+        require!(
+            token_amount <= self.user_mint_account.amount, 
+            SwapError::InsufficientPoolTokenBalance
+        );
 
         let withdraw_fee = if self.pool_fee_account.key() == self.user_mint_account.key() {
             0
@@ -170,7 +174,7 @@ impl<'info> WithdrawAll<'info> {
                 &self.token_program,
                 None
             )?;
-            msg!("收取提取手续费: {}", withdraw_fee);
+            msg!("收取提取手续费(双币): {}", withdraw_fee);
         }
 
         // 销毁 lp mint 
