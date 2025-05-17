@@ -58,3 +58,17 @@ pub struct DepositSingleEvent {
     pub source_token_amount: u64,
     pub pool_token_amount: u64,
 }
+
+/// 兑换事件
+#[event]
+pub struct SwapEvent {
+    pub user: Pubkey,
+    pub user_source_token: Pubkey,
+    pub user_destination_token: Pubkey,
+    pub pool_source_token: Pubkey,
+    pub pool_destination_token: Pubkey,
+    pub from_mint: Pubkey,
+    pub to_mint: Pubkey,
+    pub amount_in: u64,
+    pub amount_out: u64,
+}

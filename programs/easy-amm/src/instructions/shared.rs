@@ -13,7 +13,7 @@ use anchor_spl::token_interface::{
     BurnChecked,
     burn_checked
 };
-use spl_math::precise_number::PreciseNumber;
+use spl_math::{checked_ceil_div::CheckedCeilDiv, precise_number::PreciseNumber};
 
 use crate::{error::SwapError, state::Swap};
 
@@ -220,4 +220,27 @@ pub fn deposit_single_token_type(
         .checked_mul(&root)?;
 
     pool_tokens.floor()?.to_imprecise()
+}
+
+
+/// 计算能兑换到的代币
+pub fn calculate_exchange_amount(
+    trade_fee_amount: u128,
+    source_amount: u128,
+    swap_source_amount: u128,
+    swap_destination_amount: u128,
+) -> Option<(u128, u128)> {
+    let trade_fee = calculation_fee(source_amount, trade_fee_amount)?;
+    let source_amount_less_fess = source_amount.checked_sub(trade_fee)?;
+
+    let invariant = swap_source_amount.checked_mul(swap_destination_amount)?;
+    let new_swap_source_amount = swap_source_amount.checked_add(source_amount_less_fess)?;
+    let (new_swap_destination_amount, new_swap_source_amount) = invariant
+        .checked_ceil_div(new_swap_source_amount)?;
+
+    let source_amount_swapped = new_swap_source_amount.checked_sub(swap_source_amount)?;
+    let destination_amount_swapped = swap_destination_amount
+        .checked_sub(new_swap_destination_amount)?;
+
+    Some((source_amount_swapped, destination_amount_swapped))
 }

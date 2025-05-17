@@ -80,4 +80,18 @@ pub mod easy_amm {
             minimum_pool_token_amount
         )
     }
+
+    pub fn exchange(
+        ctx: Context<Exchange>,
+        a_to_b: bool,
+        amount_in: u64,
+        minimum_amount_out: u64
+    ) -> Result<()> {
+        ctx.accounts.process(
+            ctx.bumps.swap, 
+            a_to_b, 
+            amount_in, 
+            minimum_amount_out
+        )
+    }
 }
