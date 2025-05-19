@@ -143,20 +143,36 @@ pub fn to_u64(val: u128) -> Result<u64> {
 
 /// 根据提供的池子代币数量、总交易代币数量和池子代币总供应量，计算可兑换的交易代币数量。
 /// 计算可兑换的交易代币数量。
-/// 向下取整
 pub fn pool_tokens_to_trading_toknes(
+    ceiling: bool,
     pool_tokens: u128,
     pool_token_supply: u128,
     swap_token_a_amount: u128,
     swap_token_b_amount: u128, 
 ) -> Option<(u128, u128)> {
-    let token_a_amount = pool_tokens
+    let mut token_a_amount = pool_tokens
         .checked_mul(swap_token_a_amount)?
         .checked_div(pool_token_supply)?;
 
-    let token_b_amount = pool_tokens
+    let mut token_b_amount = pool_tokens
         .checked_mul(swap_token_b_amount)?
         .checked_div(pool_token_supply)?;
+
+    if ceiling {
+        let token_a_remainder = pool_tokens
+            .checked_mul(swap_token_a_amount)?
+            .checked_rem(pool_token_supply)?;
+        if token_a_remainder > 0 && token_a_amount > 0 {
+            token_a_amount += 1;
+        }
+
+        let token_b_remainder = pool_tokens
+            .checked_mul(swap_token_b_amount)?
+            .checked_rem(pool_token_supply)?;
+        if token_b_remainder > 0 && token_b_amount > 0 {
+            token_b_amount += 1;
+        }
+    }
     
     Some((token_a_amount, token_b_amount))
 }

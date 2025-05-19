@@ -103,6 +103,7 @@ impl<'info> Deposit<'info> {
         );
 
         let (token_a_amount, token_b_amount) = pool_tokens_to_trading_toknes(
+            true,
             u128::from(pool_token_amount), 
             u128::from(self.pool_mint.supply), 
             u128::from(self.token_a.amount), 

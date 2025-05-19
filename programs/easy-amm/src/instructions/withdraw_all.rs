@@ -115,7 +115,7 @@ impl<'info> WithdrawAll<'info> {
     ) -> Result<()> {
         require_gt!(token_amount, Swap::MIN_TOKEN_AMOUNT, SwapError::WithdrawTooSmall);
         require!(
-            token_amount <= self.user_mint_account.amount, 
+            token_amount < self.user_mint_account.amount, 
             SwapError::InsufficientPoolTokenBalance
         );
 
@@ -135,6 +135,7 @@ impl<'info> WithdrawAll<'info> {
             .ok_or(SwapError::CalculationFailure)?;
 
         let (token_a_amount, token_b_amount) = pool_tokens_to_trading_toknes(
+            false,
             u128::from(token_amount), 
             u128::from(self.pool_mint.supply), 
             u128::from(self.token_a.amount), 

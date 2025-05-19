@@ -16,7 +16,6 @@ describe("easy-amm", () => {
   const connection = provider.connection;
 
   const payer = provider.wallet.publicKey;
-  const user = Keypair.generate();
 
   let swapPda: PublicKey;
   let tokenAPda: PublicKey;
@@ -30,6 +29,25 @@ describe("easy-amm", () => {
 
   // ---------- cache helpers ----------
   const CACHE_PATH = path.resolve(__dirname, "addresses.json");
+
+  const USER_KEYPAIR_PATH = path.resolve(__dirname, "user.secret.json");
+
+  function saveUser(kp: Keypair) {
+    fs.writeFileSync(
+      USER_KEYPAIR_PATH,
+      JSON.stringify(Array.from(kp.secretKey))
+    );
+  }
+
+  function loadUser(): Keypair {
+    if (!fs.existsSync(USER_KEYPAIR_PATH)) {
+      throw new Error("❌ 用户密钥文件 user.secret.json 不存在，请先运行 createEnvironment 初始化！");
+    }
+    const arr = Uint8Array.from(
+      JSON.parse(fs.readFileSync(USER_KEYPAIR_PATH, "utf8"))
+    );
+    return Keypair.fromSecretKey(arr);
+  }
 
   interface AddrCache {
     swapPda: string;
@@ -54,6 +72,7 @@ describe("easy-amm", () => {
 
   // ---------- environment bootstrap ----------
   async function createEnvironment() {
+    const user = Keypair.generate();
     // derive PDAs
     [swapPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("easy-amm")],
@@ -92,6 +111,8 @@ describe("easy-amm", () => {
     await mintTo(connection, user, mintA, userTokenA, user, 200_000_000);
     await mintTo(connection, user, mintB, userTokenB, user, 100_000_000);
 
+    saveUser(user);
+
     // save to cache
     saveCache({
       swapPda: swapPda.toBase58(),
@@ -125,6 +146,8 @@ describe("easy-amm", () => {
 
 
   it("Is initialized!", async () => {
+    const user = loadUser();
+
     // Add your test here.
     const tx = await program.methods.initializeSwap(
       200,
@@ -177,4 +200,10 @@ describe("easy-amm", () => {
     console.log("✅ 所有断言通过！");
     console.log("Your transaction signature", tx);
   });
+
+  it.only("Is deposit", async () => {
+    
+
+  });
+
 });
