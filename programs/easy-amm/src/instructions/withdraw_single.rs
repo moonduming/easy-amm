@@ -132,7 +132,7 @@ impl<'info> WithdrawSingle<'info> {
             &self.token_program, 
             to_u64(burn_pool_token_amount)?
         )?;
-        msg!("销毁池币(但币种提取): {}", burn_pool_token_amount);
+        msg!("销毁池币(单币种提取): {}", burn_pool_token_amount);
 
         // 转账
         transfer_tokens(

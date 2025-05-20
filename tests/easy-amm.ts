@@ -322,7 +322,188 @@ describe("easy-amm", () => {
     const userLpInfo = await getAccount(connection, userLpAta);
     expect(userLpInfo.amount).to.equal(OlduserLpaAmount - BigInt(poolTokenAmount.toString()));
   
-    console.log("✅ Deposit 校验通过Tx: ", tx);
+    console.log("✅ WithdrawAll 校验通过Tx: ", tx);
   });
 
+  it("Is deposit single", async () => {
+    const user = loadUser();
+
+    //--------------------------------------------------------------------
+    // 0. 读取旧状态
+    //--------------------------------------------------------------------
+    const oldUserLpAta   = await getAssociatedTokenAddress(poolMint, user.publicKey);
+    const oldUserLpInfo  = await getAccount(connection, oldUserLpAta);
+    const oldUserLpAmt   = oldUserLpInfo.amount;
+
+    const oldUserTokenAInfo = await getAccount(connection, userTokenA);
+    const oldUserTokenAAmt  = oldUserTokenAInfo.amount;
+
+    const poolTokenAInfo = await getAccount(connection, tokenAPda);
+    const poolMintInfo   = await getMint(connection, poolMint);
+
+    const reserveA   = BigInt(poolTokenAInfo.amount);                // A
+    const poolSupply = BigInt(poolMintInfo.supply);                  // L
+
+    //--------------------------------------------------------------------
+    // 1. 本次单币投入数量 (用户提供的 tokenA)
+    //--------------------------------------------------------------------
+    const sourceTokenAmount = BigInt(200_000_000);
+    const halfSource = sourceTokenAmount / BigInt(2);
+
+    //--------------------------------------------------------------------
+    // 2. 计算 trade fee & 有效存入量
+    //--------------------------------------------------------------------
+    const TRADE_FEE_BPS = BigInt(200);      // 与 initializeSwap 中保持一致 (2%)
+    const FEE_DENOM     = BigInt(10_000);
+
+    const fee = halfSource * TRADE_FEE_BPS / FEE_DENOM;  // 有效 tokenA
+    const netDepositA = sourceTokenAmount - fee;
+
+    //--------------------------------------------------------------------
+    // 3. 根据公式 ΔL = L * (sqrt(1 + R) - 1)，估算可铸 LP
+    //--------------------------------------------------------------------
+    const R = Number(netDepositA) / Number(reserveA);                // R = x/A
+    const mintedFloat = Number(poolSupply) * (Math.sqrt(1 + R) - 1); // ΔL (浮点)
+    const mintedLP = BigInt(Math.floor(mintedFloat));                // 向下取整
+
+    console.log("mintedLp: ", mintedLP);
+    //--------------------------------------------------------------------
+    // 4. 最小可接受 LP (滑点保护 1 %)
+    //--------------------------------------------------------------------
+    const minPoolTokenAmount = mintedLP * BigInt(99) / BigInt(100);  // -1 %
+
+    //--------------------------------------------------------------------
+    // 5. 发起单币存入交易
+    //--------------------------------------------------------------------
+    const tx = await program.methods.deposiitSingle(
+      new anchor.BN(sourceTokenAmount.toString()),
+      new anchor.BN(minPoolTokenAmount.toString())
+    ).accounts({
+      user: user.publicKey,
+      userToken: userTokenA,
+      poolToken: tokenAPda,
+      mint: mintA,
+      tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+    }).signers([user]).rpc();
+
+    //--------------------------------------------------------------------
+    // 读取新状态并断言
+    //--------------------------------------------------------------------
+    const poolTokenAInfoAfter = await getAccount(connection, tokenAPda);
+    const poolMintInfoAfter   = await getMint(connection, poolMint);
+    const newUserLpInfo       = await getAccount(connection, oldUserLpAta);
+    const newUserTokenAInfo   = await getAccount(connection, userTokenA);
+
+    // tokenA 应增加 sourceTokenAmount
+    expect(poolTokenAInfoAfter.amount).to.equal(reserveA + sourceTokenAmount);
+
+    // LP 总供应量应增加 mintedLP (允许 ±1 容差)
+    const actualLpSupply = BigInt(poolMintInfoAfter.supply.toString());
+    const expectedLpSupply = poolSupply + mintedLP;
+    expect(
+      actualLpSupply >= expectedLpSupply - BigInt(1) && actualLpSupply <= expectedLpSupply + BigInt(1)
+    ).to.be.true;
+
+    // 用户 LP 余额应 + mintedLP (允许 ±1 容差)
+    const actualUserLp = BigInt(newUserLpInfo.amount.toString());
+    const expectedUserLp = oldUserLpAmt + mintedLP;
+    expect(
+      actualUserLp >= expectedUserLp - BigInt(1) && actualUserLp <= expectedUserLp + BigInt(1)
+    ).to.be.true;
+    // 用户 tokenA 余额应 - sourceTokenAmount
+    expect(newUserTokenAInfo.amount).to.equal(oldUserTokenAAmt - sourceTokenAmount);
+
+    console.log("✅ Deposit-Single 校验通过 Tx:", tx);
+  });
+
+  it.only("Is withdraw single", async () => {
+    const user = loadUser();
+    const poolFeeAccount = await getAssociatedTokenAddress(poolMint, payer);
+    //--------------------------------------------------------------------
+    // 0. 读取旧状态
+    //--------------------------------------------------------------------
+    const userLpATA   = await getAssociatedTokenAddress(poolMint, user.publicKey);
+    const oldUserLp   = (await getAccount(connection, userLpATA)).amount;
+    const oldUserTokA = (await getAccount(connection, userTokenA)).amount;
+  
+    const poolTokAInfo = await getAccount(connection, tokenAPda);
+    const poolMintInfo = await getMint(connection, poolMint);
+  
+    const reserveA   = BigInt(poolTokAInfo.amount);  // A
+    const poolSupply = BigInt(poolMintInfo.supply);  // L
+  
+    //--------------------------------------------------------------------
+    // 1. 想提取的 tokenA 数量
+    //--------------------------------------------------------------------
+    const destTokenAmount = BigInt(500_000_000); // 500 tokenA (6 decimals)
+  
+    //--------------------------------------------------------------------
+    // 2. 预估需 burn 的 LP (简单按比例)
+    //--------------------------------------------------------------------
+    const halfSource = (destTokenAmount + BigInt(1)) / BigInt(2);
+    const TRADE_FEE_BPS = BigInt(200);      // 与 initializeSwap 中保持一致 (2%)
+    const FEE_DENOM     = BigInt(10_000);
+    const WITHDRAW_FEE_BPS = BigInt(300);  // 3 % fee
+    
+    // 计算需要销毁的 LP
+    let numerator = halfSource * FEE_DENOM;
+    let denominator = FEE_DENOM - TRADE_FEE_BPS;
+    let trade_fee_source_amount = (numerator + denominator - BigInt(1)) / denominator
+    let netDepositA = destTokenAmount - halfSource + trade_fee_source_amount;
+    const R = Number(netDepositA) / Number(reserveA);                // R = x/A
+    const mintedFloat = Number(poolSupply) * (1 - Math.sqrt(1 - R)); // ΔL (浮点)
+    const burnLP = BigInt(Math.ceil(mintedFloat));                // 向上取整
+    console.log("burnLP: ", burnLP);
+    // 提取手续费
+    const withdraw_fee = burnLP * WITHDRAW_FEE_BPS / FEE_DENOM
+    // 实际需要支付的 LP
+    const LPAmount = burnLP + withdraw_fee;
+    console.log("LPAmount: ", LPAmount);
+
+    const maxPoolTokenBurn = LPAmount * BigInt(101) / BigInt(100);  // 允许 1 % 滑点
+  
+    //--------------------------------------------------------------------
+    // 3. 发送 withdrawSingle
+    //--------------------------------------------------------------------
+    const tx = await program.methods.withdrawSingle(
+        new anchor.BN(destTokenAmount.toString()),
+        new anchor.BN(maxPoolTokenBurn.toString())
+      ).accounts({
+        user: user.publicKey,
+        userMintAccount: userLpATA,
+        poolToken: tokenAPda,
+        mint: mintA,
+        poolFeeAccount,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID
+      }).signers([user]).rpc();
+  
+    //--------------------------------------------------------------------
+    // 4. 读取新状态并断言（容差 ±1）
+    //--------------------------------------------------------------------
+    const poolTokAAfter = await getAccount(connection, tokenAPda);
+    const poolMintAfter = await getMint(connection, poolMint);
+    const userLpAfter   = await getAccount(connection, userLpATA);
+    const userTokAAfter = await getAccount(connection, userTokenA);
+  
+    // 4‑1 池子 tokenA 减少
+    expect(poolTokAAfter.amount).to.equal(reserveA - destTokenAmount);
+  
+    // 4‑2 LP 总供应量减少 ≈ burnLP
+    const actualBurn = poolSupply - BigInt(poolMintAfter.supply);
+    expect(
+      actualBurn >= burnLP - BigInt(1) && actualBurn <= burnLP + BigInt(1)
+    ).to.be.true;
+  
+    // 4‑3 用户 LP 余额减少 ≈ burnLP
+    const userLpDiff = oldUserLp - BigInt(userLpAfter.amount);
+    expect(
+      userLpDiff >= LPAmount - BigInt(1) && userLpDiff <= LPAmount + BigInt(1)
+    ).to.be.true;
+  
+    // 4‑4 用户 tokenA 余额增加 destTokenAmount
+    expect(userTokAAfter.amount).to.equal(oldUserTokA + destTokenAmount);
+  
+    console.log("✅ Withdraw-Single 校验通过 Tx:", tx);
+  });
+// 892397533
 });
