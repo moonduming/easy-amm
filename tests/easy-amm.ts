@@ -30,7 +30,7 @@ describe("easy-amm", () => {
   // ---------- cache helpers ----------
   const CACHE_PATH = path.resolve(__dirname, "addresses.json");
 
-  const USER_KEYPAIR_PATH = path.resolve(__dirname, "user.secret.json");
+  const USER_KEYPAIR_PATH = path.resolve(__dirname, "user_secret.json");
 
   function saveUser(kp: Keypair) {
     fs.writeFileSync(
@@ -108,8 +108,8 @@ describe("easy-amm", () => {
     userTokenB = (await getOrCreateAssociatedTokenAccount(connection, user, mintB, user.publicKey)).address;
 
     // mint some tokens into user ATAs
-    await mintTo(connection, user, mintA, userTokenA, user, 200_000_000);
-    await mintTo(connection, user, mintB, userTokenB, user, 100_000_000);
+    await mintTo(connection, user, mintA, userTokenA, user, 2_000_000_000);
+    await mintTo(connection, user, mintB, userTokenB, user, 1_000_000_000);
 
     saveUser(user);
 
@@ -201,9 +201,128 @@ describe("easy-amm", () => {
     console.log("Your transaction signature", tx);
   });
 
-  it.only("Is deposit", async () => {
-    
+  it("Is deposit", async () => {
+    const user = loadUser();
+    const OlduserLpAta = await getAssociatedTokenAddress(poolMint, user.publicKey);
+    const OlduserLpInfo = await getAccount(connection, OlduserLpAta);
+    const OlduserLpaAmount = OlduserLpInfo.amount;
+    // 计算 maximum_token_a_amount 和 maximum_token_b_amount
+    const tokenAAccountBefore = await getAccount(connection, tokenAPda);
+    const tokenBAccountBefore = await getAccount(connection, tokenBPda);
+    const poolMintInfoBefore  = await getMint(connection, poolMint);
 
+    const tokenAInPool  = BigInt(tokenAAccountBefore.amount);
+    const tokenBInPool  = BigInt(tokenBAccountBefore.amount);
+    const poolSupply    = BigInt(poolMintInfoBefore.supply);
+
+    const poolTokenAmount = BigInt(2_000_000_000); 
+
+    const tokenARequired = (poolTokenAmount * tokenAInPool) / poolSupply;
+    const tokenBRequired = (poolTokenAmount * tokenBInPool) / poolSupply;
+    
+    // 预留 1 % 滑点
+    const maxTokenA = (tokenARequired * BigInt(101)) / BigInt(100); // +1 %
+    const maxTokenB = (tokenBRequired * BigInt(101)) / BigInt(100); // +1 %
+    // 兑换
+    const tx = await program.methods.deposiit(
+      new anchor.BN(poolTokenAmount.toString()),           // 想要 2_000 LP
+      new anchor.BN(maxTokenA.toString()), 
+      new anchor.BN(maxTokenB.toString())
+    ).accounts({
+      user: user.publicKey,
+      tokenAMint: mintA,
+      tokenBMint: mintB,
+      userTokenA: userTokenA,
+      userTokenB: userTokenB,
+      tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID
+    }).signers([user]).rpc();
+
+    // 校验
+    const tokenAAccountAfter = await getAccount(connection, tokenAPda);
+    const tokenBBccountAfter = await getAccount(connection, tokenBPda);
+    const poolMintInfoAfter  = await getMint(connection, poolMint);
+  
+    // 5.1 池子 A, B 代币增加
+    expect(tokenAAccountAfter.amount).to.equal(tokenAInPool + tokenARequired);
+    expect(tokenBBccountAfter.amount).to.equal(tokenBInPool + tokenBRequired);
+  
+    // LP 池币总供应量应
+    expect(poolMintInfoAfter.supply).to.equal(poolSupply + poolTokenAmount);
+  
+    // 用户 LP 余额应
+    const userLpAta = await getAssociatedTokenAddress(poolMint, user.publicKey);
+    const userLpInfo = await getAccount(connection, userLpAta);
+    expect(userLpInfo.amount).to.equal(BigInt(poolTokenAmount.toString()) + OlduserLpaAmount);
+  
+    console.log("✅ Deposit 校验通过Tx: ", tx);
+  });
+
+  it("Is WithdrawAll", async () => {
+    const user = loadUser();
+    const poolFeeAccount = await getAssociatedTokenAddress(poolMint, payer);
+    const OlduserLpAta = await getAssociatedTokenAddress(poolMint, user.publicKey);
+    const OlduserLpInfo = await getAccount(connection, OlduserLpAta);
+    const OlduserLpaAmount = OlduserLpInfo.amount;
+    // 计算 minimum_token_a_amount 和 minimum_token_b_amount
+    const tokenAAccountBefore = await getAccount(connection, tokenAPda);
+    const tokenBAccountBefore = await getAccount(connection, tokenBPda);
+    const poolMintInfoBefore  = await getMint(connection, poolMint);
+
+    const tokenAInPool  = BigInt(tokenAAccountBefore.amount);
+    const tokenBInPool  = BigInt(tokenBAccountBefore.amount);
+    const poolSupply    = BigInt(poolMintInfoBefore.supply);
+
+    const poolTokenAmount = BigInt(2_000_000_000); 
+
+    // ──────────────────────────────────────────────────────────────
+    // 2. 预估可领取的 tokenA / tokenB  (含 3% withdraw fee)
+    //    公式: raw_out = LP_burn * reserve / total_supply
+    //          user_out = raw_out * (1 - feeBps)
+    // ──────────────────────────────────────────────────────────────
+    const WITHDRAW_FEE_BPS = BigInt(300);  // 3 % fee
+    const FEE_DENOM        = BigInt(10_000);
+
+    const poolTokenAmount2 = poolTokenAmount *  (FEE_DENOM - WITHDRAW_FEE_BPS) / FEE_DENOM;
+
+    // raw amount before fee
+    const tokenAOut = (poolTokenAmount2 * tokenAInPool) / poolSupply;
+    const tokenBOut = (poolTokenAmount2 * tokenBInPool) / poolSupply;
+
+    // 预留 1 % 滑点
+    const minTokenA = (tokenAOut * BigInt(99)) / BigInt(100); // -1 %
+    const minTokenB = (tokenBOut * BigInt(99)) / BigInt(100); // -1 %
+    // 兑换
+    const tx = await program.methods.withdrawAll(
+      new anchor.BN(poolTokenAmount.toString()),           // 想要 2_000 LP
+      new anchor.BN(minTokenA.toString()), 
+      new anchor.BN(minTokenB.toString())
+    ).accounts({
+      user: user.publicKey,
+      tokenAMint: mintA,
+      tokenBMint: mintB,
+      userMintAccount: OlduserLpAta,
+      poolFeeAccount,
+      tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID
+    }).signers([user]).rpc();
+
+    // 校验
+    const tokenAAccountAfter = await getAccount(connection, tokenAPda);
+    const tokenBBccountAfter = await getAccount(connection, tokenBPda);
+    const poolMintInfoAfter  = await getMint(connection, poolMint);
+  
+    // 池子 A, B 代币减少
+    expect(tokenAAccountAfter.amount).to.equal(tokenAInPool - tokenAOut);
+    expect(tokenBBccountAfter.amount).to.equal(tokenBInPool - tokenBOut);
+  
+    // LP 池币总供应量应
+    expect(poolMintInfoAfter.supply).to.equal(poolSupply - poolTokenAmount2);
+  
+    // 用户 LP 余额
+    const userLpAta = await getAssociatedTokenAddress(poolMint, user.publicKey);
+    const userLpInfo = await getAccount(connection, userLpAta);
+    expect(userLpInfo.amount).to.equal(OlduserLpaAmount - BigInt(poolTokenAmount.toString()));
+  
+    console.log("✅ Deposit 校验通过Tx: ", tx);
   });
 
 });
