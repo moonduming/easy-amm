@@ -416,7 +416,7 @@ describe("easy-amm", () => {
     console.log("✅ Deposit-Single 校验通过 Tx:", tx);
   });
 
-  it.only("Is withdraw single", async () => {
+  it("Is withdraw single", async () => {
     const user = loadUser();
     const poolFeeAccount = await getAssociatedTokenAddress(poolMint, payer);
     //--------------------------------------------------------------------
@@ -505,5 +505,75 @@ describe("easy-amm", () => {
   
     console.log("✅ Withdraw-Single 校验通过 Tx:", tx);
   });
-// 892397533
+
+  it.only("Is Swap", async () => {
+    const user = loadUser();
+    //--------------------------------------------------------------------
+    // 0. 读取旧状态
+    //--------------------------------------------------------------------
+    const userLpATA   = await getAssociatedTokenAddress(poolMint, user.publicKey);
+    const oldUserLp   = (await getAccount(connection, userLpATA)).amount;
+    const oldUserTokA = (await getAccount(connection, userTokenA)).amount;
+    const oldUserTokB = (await getAccount(connection, userTokenB)).amount;
+  
+    const poolTokAInfo = await getAccount(connection, tokenAPda);
+    const poolTokBInfo = await getAccount(connection, tokenBPda);
+  
+    const reserveA   = BigInt(poolTokAInfo.amount);  // A
+    const reserveB   = BigInt(poolTokBInfo.amount);  // B
+
+    const amount_in = BigInt(200_000_000);
+    const TRADE_FEE_BPS = BigInt(200);      // 与 initializeSwap 中保持一致 (2%)
+    const FEE_DENOM = BigInt(10_000);
+    const fees = amount_in * TRADE_FEE_BPS / FEE_DENOM
+    const source_amount = amount_in - fees;
+
+    // 计算能兑换到的 Token B
+    const K = reserveA * reserveB;
+    const new_A_amount = reserveA + source_amount
+    const new_B_amount = (K + new_A_amount - BigInt(1)) / new_A_amount;
+    const new_A_amount2 = (K + new_B_amount - BigInt(1)) / new_B_amount
+    const source_in = new_A_amount2 - reserveA + fees;
+    console.log("source_in: ", source_in);
+
+    const destination_amount_swapped = reserveB - new_B_amount;
+    console.log("destination_amount_swapped: ", destination_amount_swapped);
+    // 允许 1% 滑点
+    const minimum_amount_out = destination_amount_swapped * BigInt(99) / BigInt(100)
+
+    const tx = await program.methods.exchange(
+      true,
+      new anchor.BN(amount_in.toString()),
+      new anchor.BN(minimum_amount_out.toString())
+    ).accounts({
+      user: user.publicKey,
+      tokenAMint: mintA,
+      tokenBMint: mintB,
+      tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID
+    }).signers([user]).rpc();
+
+    // --------------------------------------------------------------------
+    // 读取新状态并断言
+    // --------------------------------------------------------------------
+    const poolTokAAfter   = await getAccount(connection, tokenAPda);
+    const poolTokBAfter   = await getAccount(connection, tokenBPda);
+    const newUserTokAInfo = await getAccount(connection, userTokenA);
+    const newUserTokBInfo = await getAccount(connection, userTokenB);
+
+    // 1. 池子 A 应增加 net source_amount
+    expect(poolTokAAfter.amount).to.equal(reserveA + source_in);
+
+    // 2. 池子 B 应减少 destination_amount_swapped
+    expect(poolTokBAfter.amount).to.equal(reserveB - destination_amount_swapped);
+
+    // 3. 用户 tokenA 余额应减少 amount_in
+    expect(newUserTokAInfo.amount).to.equal(oldUserTokA - source_in);
+
+    // 4. 用户 tokenB 余额应增加 destination_amount_swapped
+    expect(newUserTokBInfo.amount).to.equal(oldUserTokB + destination_amount_swapped);
+
+    console.log("✅ Swap 校验通过 Tx:", tx);
+
+  });
+
 });

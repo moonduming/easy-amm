@@ -88,13 +88,6 @@ pub struct Exchange<'info> {
     )]
     pub pool_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    #[account(
-        mut,
-        address = swap.pool_fee_account,
-        token::mint = pool_mint
-    )]
-    pub pool_fee_account: Box<InterfaceAccount<'info, TokenAccount>>,
-
     pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -191,6 +184,9 @@ impl<'info> Exchange<'info> {
             }
             amount_received
         } else {
+            if destination_amount_swapped < minimum_amount_out {
+                return err!(SwapError::ExceededSlippage);
+            }
             destination_amount_swapped
         };
 

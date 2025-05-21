@@ -258,5 +258,7 @@ pub fn calculate_exchange_amount(
     let destination_amount_swapped = swap_destination_amount
         .checked_sub(new_swap_destination_amount)?;
 
+    let source_amount_swapped = source_amount_swapped.checked_add(trade_fee)?;
+    
     Some((source_amount_swapped, destination_amount_swapped))
 }
