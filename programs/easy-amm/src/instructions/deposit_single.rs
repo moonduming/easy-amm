@@ -19,8 +19,8 @@ pub struct DepositSingle<'info> {
 
     #[account(
         mut,
-        token::mint = mint,
-        token::authority = user
+        associated_token::mint = mint,
+        associated_token::authority = user
     )]
     pub user_token: Box<InterfaceAccount<'info, TokenAccount>>,
 

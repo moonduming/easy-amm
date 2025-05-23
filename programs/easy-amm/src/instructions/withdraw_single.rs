@@ -37,8 +37,8 @@ pub struct WithdrawSingle<'info> {
 
     #[account(
         mut,
-        token::mint = swap.pool_mint,
-        token::authority = user
+        associated_token::mint = swap.pool_mint,
+        associated_token::authority = user
     )]
     pub user_mint_account: Box<InterfaceAccount<'info, TokenAccount>>,
 

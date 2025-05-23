@@ -29,15 +29,15 @@ pub struct Deposit<'info> {
 
     #[account(
         mut,
-        token::mint = token_a_mint,
-        token::authority = user
+        associated_token::mint = token_a_mint,
+        associated_token::authority = user
     )]
     pub user_token_a: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         mut,
-        token::mint = token_b_mint,
-        token::authority = user
+        associated_token::mint = token_b_mint,
+        associated_token::authority = user
     )]
     pub user_token_b: Box<InterfaceAccount<'info, TokenAccount>>,
 

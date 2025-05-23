@@ -1,0 +1,150 @@
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #0d0f1a 0%, #1a2238 100%);
+  background-attachment: fixed;
+  color: #e0e0e0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 70% 20%, #14f19533 0%, transparent 60%),
+    radial-gradient(ellipse at 30% 80%, #00ffe033 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  background: rgba(20, 20, 35, 0.9);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #00ffe0;
+  box-shadow: 0 0 20px rgba(0, 255, 224, 0.5);
+  text-align: left;
+  color: #e7fefc;
+  box-shadow: 0 2px 24px 0 #14f19533, 0 0 20px rgba(0, 255, 224, 0.5);
+  transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
+}
+
+.card:hover {
+  border-color: #14f195;
+  box-shadow: 0 0 32px #14f19588, 0 0 24px #00ffe044;
+  transform: translateY(-3px) scale(1.012);
+}
+
+.card h2 {
+  font-size: 1.7rem;
+  font-weight: bold;
+  text-shadow: 0 2px 12px #00ffe099;
+  margin-bottom: 1rem;
+  color: #14f195;
+}
+
+.card input,
+.card select,
+.card textarea {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #00ffe0;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  color: #e0e0e0;
+  caret-color: #00ffe0;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: 0.7rem;
+}
+
+.card input::placeholder,
+.card textarea::placeholder {
+  color: rgba(224, 224, 224, 0.6);
+}
+
+.card input:focus,
+.card select:focus,
+.card textarea:focus {
+  border-color: #14f195;
+  box-shadow: 0 0 8px rgba(20, 241, 149, 0.7);
+}
+
+.card button {
+  background: linear-gradient(90deg, #14f195 0%, #00ffe0 100%);
+  color: #0d0f1a;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px #14f19544;
+  padding: 0.6rem 1.3rem;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+.card button:active {
+  transform: scale(0.97);
+}
+.card button:disabled {
+  filter: grayscale(0.8) brightness(1.2);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* ======================= */
+/* App UI 卡片式模块布局  */
+/* ======================= */
+
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 900px) {
+  .app-grid {
+    grid-template-columns: 1fr;
+  }
+  .card {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}

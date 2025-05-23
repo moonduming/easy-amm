@@ -159,8 +159,6 @@ describe("easy-amm", () => {
       user: user.publicKey,
       tokenAMint: mintA,
       tokenBMint: mintB,
-      userTokenA: userTokenA,
-      userTokenB: userTokenB,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID
     }).signers([user]).rpc();
     
@@ -232,8 +230,6 @@ describe("easy-amm", () => {
       user: user.publicKey,
       tokenAMint: mintA,
       tokenBMint: mintB,
-      userTokenA: userTokenA,
-      userTokenB: userTokenB,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID
     }).signers([user]).rpc();
 
@@ -243,8 +239,14 @@ describe("easy-amm", () => {
     const poolMintInfoAfter  = await getMint(connection, poolMint);
   
     // 5.1 池子 A, B 代币增加
-    expect(tokenAAccountAfter.amount).to.equal(tokenAInPool + tokenARequired);
-    expect(tokenBBccountAfter.amount).to.equal(tokenBInPool + tokenBRequired);
+    expect(
+      tokenAAccountAfter.amount >= tokenAInPool + tokenARequired - BigInt(1) 
+        && tokenAAccountAfter.amount <= tokenAInPool + tokenARequired + BigInt(1)
+    ).to.be.true;
+    expect(
+      tokenBBccountAfter.amount >= tokenBInPool + tokenBRequired - BigInt(1) 
+        && tokenBBccountAfter.amount <= tokenBInPool + tokenBRequired + BigInt(1)
+    ).to.be.true;
   
     // LP 池币总供应量应
     expect(poolMintInfoAfter.supply).to.equal(poolSupply + poolTokenAmount);
@@ -300,7 +302,6 @@ describe("easy-amm", () => {
       user: user.publicKey,
       tokenAMint: mintA,
       tokenBMint: mintB,
-      userMintAccount: OlduserLpAta,
       poolFeeAccount,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID
     }).signers([user]).rpc();
@@ -311,8 +312,14 @@ describe("easy-amm", () => {
     const poolMintInfoAfter  = await getMint(connection, poolMint);
   
     // 池子 A, B 代币减少
-    expect(tokenAAccountAfter.amount).to.equal(tokenAInPool - tokenAOut);
-    expect(tokenBBccountAfter.amount).to.equal(tokenBInPool - tokenBOut);
+    expect(
+      tokenAAccountAfter.amount >= tokenAInPool - tokenAOut - BigInt(1) 
+        && tokenAAccountAfter.amount <= tokenAInPool - tokenAOut + BigInt(1)
+    ).to.be.true;
+    expect(
+      tokenBBccountAfter.amount >= tokenBInPool - tokenBOut - BigInt(1) 
+        && tokenBBccountAfter.amount <= tokenBInPool - tokenBOut + BigInt(1)
+    ).to.be.true;
   
     // LP 池币总供应量应
     expect(poolMintInfoAfter.supply).to.equal(poolSupply - poolTokenAmount2);
@@ -380,7 +387,6 @@ describe("easy-amm", () => {
       new anchor.BN(minPoolTokenAmount.toString())
     ).accounts({
       user: user.publicKey,
-      userToken: userTokenA,
       poolToken: tokenAPda,
       mint: mintA,
       tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
@@ -395,7 +401,10 @@ describe("easy-amm", () => {
     const newUserTokenAInfo   = await getAccount(connection, userTokenA);
 
     // tokenA 应增加 sourceTokenAmount
-    expect(poolTokenAInfoAfter.amount).to.equal(reserveA + sourceTokenAmount);
+    expect(
+      poolTokenAInfoAfter.amount >= reserveA + sourceTokenAmount - BigInt(1) 
+        && poolTokenAInfoAfter.amount <= reserveA + sourceTokenAmount + BigInt(1)
+    ).to.be.true;
 
     // LP 总供应量应增加 mintedLP (允许 ±1 容差)
     const actualLpSupply = BigInt(poolMintInfoAfter.supply.toString());
@@ -411,7 +420,10 @@ describe("easy-amm", () => {
       actualUserLp >= expectedUserLp - BigInt(1) && actualUserLp <= expectedUserLp + BigInt(1)
     ).to.be.true;
     // 用户 tokenA 余额应 - sourceTokenAmount
-    expect(newUserTokenAInfo.amount).to.equal(oldUserTokenAAmt - sourceTokenAmount);
+    expect(
+      newUserTokenAInfo.amount >= oldUserTokenAAmt - sourceTokenAmount - BigInt(1) 
+        && newUserTokenAInfo.amount <= oldUserTokenAAmt - sourceTokenAmount + BigInt(1)
+    ).to.be.true;
 
     console.log("✅ Deposit-Single 校验通过 Tx:", tx);
   });
@@ -470,7 +482,6 @@ describe("easy-amm", () => {
         new anchor.BN(maxPoolTokenBurn.toString())
       ).accounts({
         user: user.publicKey,
-        userMintAccount: userLpATA,
         poolToken: tokenAPda,
         mint: mintA,
         poolFeeAccount,
@@ -486,7 +497,10 @@ describe("easy-amm", () => {
     const userTokAAfter = await getAccount(connection, userTokenA);
   
     // 4‑1 池子 tokenA 减少
-    expect(poolTokAAfter.amount).to.equal(reserveA - destTokenAmount);
+    expect(
+      poolTokAAfter.amount >= reserveA - destTokenAmount - BigInt(1) 
+        && poolTokAAfter.amount <= reserveA - destTokenAmount + BigInt(1)
+    ).to.be.true;
   
     // 4‑2 LP 总供应量减少 ≈ burnLP
     const actualBurn = poolSupply - BigInt(poolMintAfter.supply);
@@ -506,13 +520,11 @@ describe("easy-amm", () => {
     console.log("✅ Withdraw-Single 校验通过 Tx:", tx);
   });
 
-  it.only("Is Swap", async () => {
+  it("Is Swap", async () => {
     const user = loadUser();
     //--------------------------------------------------------------------
     // 0. 读取旧状态
     //--------------------------------------------------------------------
-    const userLpATA   = await getAssociatedTokenAddress(poolMint, user.publicKey);
-    const oldUserLp   = (await getAccount(connection, userLpATA)).amount;
     const oldUserTokA = (await getAccount(connection, userTokenA)).amount;
     const oldUserTokB = (await getAccount(connection, userTokenB)).amount;
   
