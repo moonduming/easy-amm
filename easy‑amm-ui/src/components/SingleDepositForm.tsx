@@ -112,7 +112,7 @@ const SingleDepositForm: React.FC = () => {
       const poolTokenPda = tokenSide === 'A' ? poolInfo.tokenA : poolInfo.tokenB;
 
       const tx = await program.methods
-        .deposiitSingle(
+        .depositSingle(
           new BN(sourceUnits.toString()),
           new BN(minLp.toString())
         )

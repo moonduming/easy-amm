@@ -55,7 +55,7 @@ pub mod easy_amm {
     }
 
     // 存入流动性(双币)
-    pub fn deposiit(
+    pub fn deposit(
         ctx: Context<Deposit>,
         pool_token_amount: u64,
         maximum_token_a_amount: u64,
@@ -69,7 +69,7 @@ pub mod easy_amm {
         )
     }
 
-    pub fn deposiit_single(
+    pub fn deposit_single(
         ctx: Context<DepositSingle>,
         source_token_amount: u64,
         minimum_pool_token_amount: u64

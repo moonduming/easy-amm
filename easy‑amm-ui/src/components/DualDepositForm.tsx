@@ -108,7 +108,7 @@ const DualDepositForm: React.FC = () => {
       const maxTokenB = BigInt(Math.ceil(Number(tokenBRequired) * slipFactor));
 
       const tx = await program.methods
-        .deposiit(
+        .deposit(
           new BN(lpUnits.toString()),
           new BN(maxTokenA.toString()),
           new BN(maxTokenB.toString())

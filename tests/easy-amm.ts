@@ -222,7 +222,7 @@ describe("easy-amm", () => {
     const maxTokenA = (tokenARequired * BigInt(101)) / BigInt(100); // +1 %
     const maxTokenB = (tokenBRequired * BigInt(101)) / BigInt(100); // +1 %
     // 兑换
-    const tx = await program.methods.deposiit(
+    const tx = await program.methods.deposit(
       new anchor.BN(poolTokenAmount.toString()),           // 想要 2_000 LP
       new anchor.BN(maxTokenA.toString()), 
       new anchor.BN(maxTokenB.toString())
@@ -382,7 +382,7 @@ describe("easy-amm", () => {
     //--------------------------------------------------------------------
     // 5. 发起单币存入交易
     //--------------------------------------------------------------------
-    const tx = await program.methods.deposiitSingle(
+    const tx = await program.methods.depositSingle(
       new anchor.BN(sourceTokenAmount.toString()),
       new anchor.BN(minPoolTokenAmount.toString())
     ).accounts({
