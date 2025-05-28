@@ -41,7 +41,7 @@ describe("easy-amm", () => {
 
   function loadUser(): Keypair {
     if (!fs.existsSync(USER_KEYPAIR_PATH)) {
-      throw new Error("❌ 用户密钥文件 user.secret.json 不存在，请先运行 createEnvironment 初始化！");
+      throw new Error("❌ 用户密钥文件 user_secret.json 不存在，请先运行 createEnvironment 初始化！");
     }
     const arr = Uint8Array.from(
       JSON.parse(fs.readFileSync(USER_KEYPAIR_PATH, "utf8"))

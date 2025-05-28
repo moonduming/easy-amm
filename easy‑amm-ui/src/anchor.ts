@@ -30,27 +30,8 @@ import idl from "../../target/idl/easy_amm.json";
   };
 
 // --- 池子账户 PDA（固定地址）---
+// 需要根据自己池子账户地址进行变更
 export const POOL_PDA = new web3.PublicKey(
   "4mdJX3PJzzdpmJqnRgCUoCatFBR1dyr2r9gr4xHNTy3r"
 );
-
-// --- 动态读取池子账户，返回所需常量 ---
-// export const fetchAddrs = async (wallet: any) => {
-//   const program = getProgram(wallet?.adapter ?? wallet);
-
-//   const pool = await program.account.swap.fetch(POOL_PDA);
-
-//   return {
-//     tokenAPda:          pool.tokenA as web3.PublicKey,
-//     tokenBPda:          pool.tokenB as web3.PublicKey,
-//     mintA:           pool.tokenAMint  as web3.PublicKey,
-//     mintB:           pool.tokenBMint  as web3.PublicKey,
-//     poolMint:        pool.poolMint as web3.PublicKey,
-//     poolFeeAccount: pool.poolFeeAccount as web3.PublicKey,
-//     swapPda:         POOL_PDA,
-//     TRADE_FEE_BPS: BigInt(pool.tradeFees.toString()),
-//     WITHDRAW_FEE_BPS: BigInt(pool.withdrawFees.toString()),
-//     BPS_DENOM: BigInt(10_000)
-//   } as const;
-// };
 
