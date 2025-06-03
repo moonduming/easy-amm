@@ -28,17 +28,17 @@ pub struct Exchange<'info> {
         seeds = [Swap::SWAP_SEEDS],
         bump
     )]
-    pub swap: Box<Account<'info, Swap>>,
+    pub swap: Account<'info, Swap>,
 
     #[account(
         address = swap.token_a_mint
     )]
-    pub token_a_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub token_a_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         address = swap.token_b_mint
     )]
-    pub token_b_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub token_b_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         mut,
@@ -49,7 +49,7 @@ pub struct Exchange<'info> {
         bump = swap.token_a_bump_seed,
         token::authority = swap
     )]
-    pub token_a: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub token_a: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -60,7 +60,7 @@ pub struct Exchange<'info> {
         bump = swap.token_b_bump_seed,
         token::authority = swap
     )]
-    pub token_b: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub token_b: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         init_if_needed,
@@ -68,7 +68,7 @@ pub struct Exchange<'info> {
         associated_token::mint = token_a_mint,
         associated_token::authority = user
     )]
-    pub user_token_a: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub user_token_a: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         init_if_needed,
@@ -76,7 +76,7 @@ pub struct Exchange<'info> {
         associated_token::mint = token_b_mint,
         associated_token::authority = user
     )]
-    pub user_token_b: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub user_token_b: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         seeds = [
@@ -86,7 +86,7 @@ pub struct Exchange<'info> {
         bump = swap.pool_mint_bump_seed,
         mint::authority = swap
     )]
-    pub pool_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub pool_mint: InterfaceAccount<'info, Mint>,
 
     pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,

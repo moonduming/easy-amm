@@ -9,20 +9,20 @@ pub struct WithdrawSingle<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
+    pub mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         seeds = [Swap::SWAP_SEEDS],
         bump
     )]
-    pub swap: Box<Account<'info, Swap>>,
+    pub swap: Account<'info, Swap>,
 
     #[account(
         mut,
         token::mint = mint,
         token::authority = swap
     )]
-    pub pool_token: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_token: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -33,14 +33,14 @@ pub struct WithdrawSingle<'info> {
         bump = swap.pool_mint_bump_seed,
         mint::authority = swap
     )]
-    pub pool_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub pool_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         mut,
         associated_token::mint = swap.pool_mint,
         associated_token::authority = user
     )]
-    pub user_mint_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub user_mint_account: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         init_if_needed,
@@ -48,14 +48,14 @@ pub struct WithdrawSingle<'info> {
         associated_token::mint = mint,
         associated_token::authority = user
     )]
-    pub user_token: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub user_token: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
         address = swap.pool_fee_account,
         token::mint = swap.pool_mint
     )]
-    pub pool_fee_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_fee_account: InterfaceAccount<'info, TokenAccount>,
 
     pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,

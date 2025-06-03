@@ -15,31 +15,31 @@ pub struct Deposit<'info> {
         seeds = [Swap::SWAP_SEEDS],
         bump
     )]
-    pub swap: Box<Account<'info, Swap>>,
+    pub swap: Account<'info, Swap>,
 
     #[account(
         address = swap.token_a_mint
     )]
-    pub token_a_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub token_a_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         address = swap.token_b_mint
     )]
-    pub token_b_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub token_b_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         mut,
         associated_token::mint = token_a_mint,
         associated_token::authority = user
     )]
-    pub user_token_a: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub user_token_a: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
         associated_token::mint = token_b_mint,
         associated_token::authority = user
     )]
-    pub user_token_b: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub user_token_b: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -50,7 +50,7 @@ pub struct Deposit<'info> {
         bump = swap.token_a_bump_seed,
         token::authority = swap
     )]
-    pub token_a: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub token_a: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -61,7 +61,7 @@ pub struct Deposit<'info> {
         bump = swap.token_b_bump_seed,
         token::authority = swap
     )]
-    pub token_b: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub token_b: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -72,7 +72,7 @@ pub struct Deposit<'info> {
         bump = swap.pool_mint_bump_seed,
         mint::authority = swap
     )]
-    pub pool_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub pool_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         init_if_needed,
@@ -80,7 +80,7 @@ pub struct Deposit<'info> {
         associated_token::mint = pool_mint,
         associated_token::authority = user
     )]
-    pub user_mint_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub user_mint_account: InterfaceAccount<'info, TokenAccount>,
 
     pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,

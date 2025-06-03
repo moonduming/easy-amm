@@ -13,23 +13,23 @@ pub struct DepositSingle<'info> {
         seeds = [Swap::SWAP_SEEDS],
         bump
     )]
-    pub swap: Box<Account<'info, Swap>>,
+    pub swap: Account<'info, Swap>,
 
-    pub mint: Box<InterfaceAccount<'info, Mint>>,
+    pub mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         mut,
         associated_token::mint = mint,
         associated_token::authority = user
     )]
-    pub user_token: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub user_token: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
         token::mint = mint,
         token::authority = swap
     )]
-    pub pool_token: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub pool_token: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -40,7 +40,7 @@ pub struct DepositSingle<'info> {
         bump = swap.pool_mint_bump_seed,
         mint::authority = swap
     )]
-    pub pool_mint: Box<InterfaceAccount<'info, Mint>>,
+    pub pool_mint: InterfaceAccount<'info, Mint>,
 
     #[account(
         init_if_needed,
@@ -48,7 +48,7 @@ pub struct DepositSingle<'info> {
         associated_token::mint = pool_mint,
         associated_token::authority = user
     )]
-    pub user_mint_account: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub user_mint_account: InterfaceAccount<'info, TokenAccount>,
 
     pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,
