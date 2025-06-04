@@ -115,7 +115,7 @@ impl<'info> WithdrawAll<'info> {
     ) -> Result<()> {
         require_gt!(token_amount, Swap::MIN_TOKEN_AMOUNT, SwapError::WithdrawTooSmall);
         require!(
-            token_amount < self.user_mint_account.amount, 
+            token_amount <= self.user_mint_account.amount,
             SwapError::InsufficientPoolTokenBalance
         );
 
