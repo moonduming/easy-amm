@@ -223,8 +223,8 @@ pub fn deposit_single_token_type(
 ) -> Option<u128> {
     // 获取在将“源代币数量的一半”兑换为另一种代币时产生的交易手续费
     let half_source_amount = std::cmp::max(1, source_amount.checked_div(2)?);
-    let tred_fee = calculation_fee(half_source_amount, trade_fee_amount)?;
-    let source_amount = source_amount.checked_sub(tred_fee)?;
+    let trade_fee = calculation_fee(half_source_amount, trade_fee_amount)?;
+    let source_amount = source_amount.checked_sub(trade_fee)?;
 
     let swap_source_amount = PreciseNumber::new(swap_token_amount)?;
     let source_amount = PreciseNumber::new(source_amount)?;
