@@ -3,7 +3,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{associated_token::AssociatedToken, token_interface::{Mint, TokenAccount, TokenInterface}};
 
-use crate::{error::SwapError, events::DepositEvent, shared::{mint_tokens, pool_tokens_to_trading_toknes, to_u64, transfer_tokens}, state::Swap};
+use crate::{error::SwapError, events::DepositEvent, shared::{mint_tokens, pool_tokens_to_trading_tokens, to_u64, transfer_tokens}, state::Swap};
 
 
 #[derive(Accounts)]
@@ -102,7 +102,7 @@ impl<'info> Deposit<'info> {
             SwapError::DepositPoolTokenAmountTooSmall
         );
 
-        let (token_a_amount, token_b_amount) = pool_tokens_to_trading_toknes(
+        let (token_a_amount, token_b_amount) = pool_tokens_to_trading_tokens(
             true,
             u128::from(pool_token_amount), 
             u128::from(self.pool_mint.supply), 

@@ -143,7 +143,7 @@ pub fn to_u64(val: u128) -> Result<u64> {
 
 /// 根据提供的池子代币数量、总交易代币数量和池子代币总供应量，计算可兑换的交易代币数量。
 /// 计算可兑换的交易代币数量。
-pub fn pool_tokens_to_trading_toknes(
+pub fn pool_tokens_to_trading_tokens(
     ceiling: bool,
     pool_tokens: u128,
     pool_token_supply: u128,
