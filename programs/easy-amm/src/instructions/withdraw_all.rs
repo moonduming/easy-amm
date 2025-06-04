@@ -8,7 +8,7 @@ use crate::{
     error::SwapError, events::WithdrawAllEvent, shared::{
         burn_tokens, 
         calculation_fee, 
-        pool_tokens_to_trading_toknes, 
+        pool_tokens_to_trading_tokens,
         to_u64, 
         transfer_tokens
     }, state::Swap
@@ -134,7 +134,7 @@ impl<'info> WithdrawAll<'info> {
             .checked_sub(withdraw_fee)
             .ok_or(SwapError::CalculationFailure)?;
 
-        let (token_a_amount, token_b_amount) = pool_tokens_to_trading_toknes(
+        let (token_a_amount, token_b_amount) = pool_tokens_to_trading_tokens(
             false,
             u128::from(token_amount), 
             u128::from(self.pool_mint.supply), 
