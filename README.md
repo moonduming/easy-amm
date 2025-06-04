@@ -89,7 +89,46 @@
 
 ---
 
-如需部署到 devnet，可在 Anchor 配置中切换网络并配置 wallet。本项目适合进一步拓展，例如支持多个池子、限价单、DAO 治理等。
+## 部署到 Devnet
+
+按照以下步骤可以将合约和前端部署到 Solana 的 devnet 网络上进行测试。
+
+1. **修改 Anchor 配置**
+
+   在 `Anchor.toml` 的 `[provider]` 配置中，将 `cluster` 设置为 `devnet`，并指向你的 devnet 钱包密钥文件：
+
+   ```toml
+   [provider]
+   cluster = "devnet"
+   wallet = "~/.config/solana/devnet.json"
+   ```
+
+   如需新建钱包，可执行 `solana-keygen new -o ~/.config/solana/devnet.json`，并确保该钱包拥有足够的 devnet SOL。
+
+2. **部署合约**
+
+   配置完成后运行：
+
+   ```bash
+   anchor deploy
+   ```
+
+   指令会根据配置将程序部署到 devnet，并在终端输出部署后的 Program ID。
+
+3. **启动前端并连接 devnet**
+
+   前端默认使用 `clusterApiUrl('devnet')`，因此直接启动即可：
+
+   ```bash
+   cd easy-amm-ui
+   npm run dev
+   ```
+
+   浏览器打开本地地址后，连接包含 devnet SOL 的钱包即可与部署好的合约交互。
+
+可选地，你可以在此处放入运行截图或 GIF 展示在 devnet 上完成添加流动性、交换等操作的效果。
+
+本项目适合进一步拓展，例如支持多个池子、限价单、DAO 治理等。
 
 ## 版权与引用说明
 
