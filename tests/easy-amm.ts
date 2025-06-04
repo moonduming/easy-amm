@@ -578,7 +578,7 @@ describe("easy-amm", () => {
     // 2. 池子 B 应减少 destination_amount_swapped
     expect(poolTokBAfter.amount).to.equal(reserveB - destination_amount_swapped);
 
-    // 3. 用户 tokenA 余额应减少 amount_in
+    // 3. 用户 tokenA 余额应减少 source_in（实际转出的数量）
     expect(newUserTokAInfo.amount).to.equal(oldUserTokA - source_in);
 
     // 4. 用户 tokenB 余额应增加 destination_amount_swapped
