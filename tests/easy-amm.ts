@@ -588,4 +588,83 @@ describe("easy-amm", () => {
 
   });
 
+  it("Withdraws all remaining LP", async () => {
+    const user = loadUser();
+    const poolFeeAccount = await getAssociatedTokenAddress(poolMint, payer);
+
+    //--------------------------------------------------------------------
+    // 0. 读取旧状态
+    //--------------------------------------------------------------------
+    const userLpAta = await getAssociatedTokenAddress(poolMint, user.publicKey);
+    const oldUserLpInfo = await getAccount(connection, userLpAta);
+    const poolTokenAmount = BigInt(oldUserLpInfo.amount.toString());
+
+    const tokenAAccountBefore = await getAccount(connection, tokenAPda);
+    const tokenBAccountBefore = await getAccount(connection, tokenBPda);
+    const poolMintInfoBefore = await getMint(connection, poolMint);
+
+    const tokenAInPool = BigInt(tokenAAccountBefore.amount);
+    const tokenBInPool = BigInt(tokenBAccountBefore.amount);
+    const poolSupply = BigInt(poolMintInfoBefore.supply);
+
+    //--------------------------------------------------------------------
+    // 1. 根据待赎回 LP 计算最小可收取代币数量
+    //--------------------------------------------------------------------
+    const WITHDRAW_FEE_BPS = BigInt(300);
+    const FEE_DENOM = BigInt(10_000);
+
+    const poolTokenAmount2 =
+      (poolTokenAmount * (FEE_DENOM - WITHDRAW_FEE_BPS)) / FEE_DENOM;
+    const tokenAOut = (poolTokenAmount2 * tokenAInPool) / poolSupply;
+    const tokenBOut = (poolTokenAmount2 * tokenBInPool) / poolSupply;
+
+    const minTokenA = (tokenAOut * BigInt(99)) / BigInt(100);
+    const minTokenB = (tokenBOut * BigInt(99)) / BigInt(100);
+
+    //--------------------------------------------------------------------
+    // 2. 发起赎回全部 LP 的交易
+    //--------------------------------------------------------------------
+    const tx = await program.methods
+      .withdrawAll(
+        new anchor.BN(poolTokenAmount.toString()),
+        new anchor.BN(minTokenA.toString()),
+        new anchor.BN(minTokenB.toString())
+      )
+      .accounts({
+        user: user.publicKey,
+        tokenAMint: mintA,
+        tokenBMint: mintB,
+        poolFeeAccount,
+        tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
+      })
+      .signers([user])
+      .rpc();
+
+    //--------------------------------------------------------------------
+    // 3. 读取新状态并断言
+    //--------------------------------------------------------------------
+    const tokenAAccountAfter = await getAccount(connection, tokenAPda);
+    const tokenBAccountAfter = await getAccount(connection, tokenBPda);
+    const poolMintInfoAfter = await getMint(connection, poolMint);
+    const userLpInfoAfter = await getAccount(connection, userLpAta);
+
+    // 池子 A、B 代币应减少 (允许 ±1 容差)
+    expect(
+      tokenAAccountAfter.amount >= tokenAInPool - tokenAOut - BigInt(1) &&
+        tokenAAccountAfter.amount <= tokenAInPool - tokenAOut + BigInt(1)
+    ).to.be.true;
+    expect(
+      tokenBAccountAfter.amount >= tokenBInPool - tokenBOut - BigInt(1) &&
+        tokenBAccountAfter.amount <= tokenBInPool - tokenBOut + BigInt(1)
+    ).to.be.true;
+
+    // LP 总供应量减少应等于有效销毁量
+    expect(poolMintInfoAfter.supply).to.equal(poolSupply - poolTokenAmount2);
+
+    // 用户 LP 余额应为 0
+    expect(userLpInfoAfter.amount).to.equal(BigInt(0));
+
+    console.log("✅ Withdraw-All-Remaining 校验通过 Tx:", tx);
+  });
+
 });
