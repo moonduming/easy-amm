@@ -2,7 +2,7 @@
 
 ## 项目简介
 
-**easy-amm** 是一个基于 Solana 区块链的自动做市商（Automated Market Maker, AMM）协议项目。该项目通过 Rust 和 Anchor 框架实现了一个简化的去中心化交易所核心模型，采用恒定乘积公式 (x \* y = k) 进行代币定价，功能上支持创建流动性池、添加/移除流动性以及代币交换等操作。项目包含完整的前后端实现：链上合约提供 AMM 核心逻辑，链下有 TypeScript + React 构建的前端 DApp 与之交互，实现交易界面的展示和操作。**easy-amm** 目前部署于本地网络，尚未发布到 Solana 主网或测试网 devnet。
+**easy-amm** 是一个基于 Solana 区块链的自动做市商（Automated Market Maker, AMM）协议项目。该项目通过 Rust 和 Anchor 框架实现了一个简化的去中心化交易所核心模型，采用恒定乘积公式 (x \* y = k) 进行代币定价，功能上支持创建流动性池、添加/移除流动性以及代币交换等操作。项目包含完整的前后端实现：链上合约提供 AMM 核心逻辑，链下有 TypeScript + React 构建的前端 DApp 与之交互，实现交易界面的展示和操作。**easy-amm** 已部署到 Solana Devnet，任何人都可以使用兼容钱包（如 Phantom）连接前端进行交互测试。
 
 ## 功能特性
 
@@ -124,7 +124,9 @@
 
    浏览器打开本地地址后，连接包含 devnet SOL 的钱包即可与部署好的合约交互。
 
-可选地，你可以在此处放入运行截图或 GIF 展示在 devnet 上完成添加流动性、交换等操作的效果。
+✅ 当前版本已成功部署到 Devnet，Program ID 为：Ds2VNJ6Ay2JVfGhLedAHAiyUyDTMGW8A8dBXneLdDhBe。
+
+当前前端未部署至公网，如需体验完整功能，请本地启动前端并使用 devnet 钱包连接体验。
 
 本项目适合进一步拓展，例如支持多个池子、限价单、DAO 治理等。
 
