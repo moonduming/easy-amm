@@ -1,54 +1,47 @@
-# React + TypeScript + Vite
+# easy-amm UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+基于 React、TypeScript 和 Vite 的 AMM 交互前端，用于查看池子状态、添加或移除流动性，以及兑换代币。合约说明见[项目 README](../README.md)。
 
-Currently, two official plugins are available:
+## 运行准备
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 安装 Node.js 和 npm。
+- 在仓库根目录运行 `anchor build`，生成前端引用的 `target/idl/easy_amm.json` 和 `target/types/easy_amm.ts`。
+- 将合约部署到所选网络，准备对应的池子账户、测试代币和钱包余额。
+- 前端配置了 Solflare 钱包适配器。
 
-## Expanding the ESLint configuration
+## 网络与账户配置
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+启动前检查以下文件：
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+| 文件 | 配置 |
+| --- | --- |
+| [src/App.tsx](src/App.tsx) | 钱包连接的 RPC endpoint 和钱包适配器网络，当前使用 Devnet |
+| [src/anchor.ts](src/anchor.ts) | 合约 provider 的 `NETWORK`、`PROGRAM_ID` 和 `POOL_PDA` |
+
+`src/anchor.ts` 中的 `NETWORK` 当前为 `http://127.0.0.1:8899`。需将两处 RPC 配置及钱包网络统一到同一目标网络；连接 Devnet 时将 `NETWORK` 改为对应的 Devnet RPC，使用本地验证器时则调整 `src/App.tsx` 的连接配置。
+
+`POOL_PDA` 是固定配置的池子地址，应替换为目标网络上实际创建的池子地址。确认 Program ID 与构建生成的 IDL 及部署一致。
+
+## 本地启动
+
+在仓库根目录运行：
+
+```bash
+cd 'easy‑amm-ui'
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+目录名中的 `‑` 为 Unicode 连字符，复制上面的命令可避免路径输入错误。打开 Vite 输出的本地地址并连接钱包。
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 开发命令
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+在本目录运行：
+
+```bash
+npm run build
+npm run lint
+npm run preview
 ```
+
+`preview` 用于预览构建产物，需先完成 `build`。前端读取合约与账户状态，需要目标 RPC 可访问且相关账户已初始化。
